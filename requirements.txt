@@ -1,0 +1,8 @@
+
+django-import-export
+djangorestframework
+django
+jwt
+bcrypt
+cryptography
+django-log-request-id
