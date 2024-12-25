@@ -303,6 +303,7 @@ class UserManagement(generics.GenericAPIView):
                 update_login.save()
                 return Response({'status':'success','message':'User updated Successfully'},status=status.HTTP_200_OK)
             else:
+                
                 hashed_passwd = bcrypt.hashpw(bytes(password, 'utf-8'), bcrypt.gensalt(10)).decode('utf8')
                 login_details = {
                 'user_name':user_name,
