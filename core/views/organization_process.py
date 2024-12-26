@@ -217,7 +217,7 @@ class RoleManagement(generics.GenericAPIView):
                                 status=status.HTTP_400_BAD_REQUEST)
             del_org.is_active = False
             del_org.save()
-            return Response({'status':'success','message':'Organization Deleted successfully'})
+            return Response({'status':'success','message':'Role Deleted successfully'})
         except Exception as e:
             logger.exception('Exception {}'.format(e.args))
             return Response({'status': 'fail', 'message': 'Something went wrong. Please try again later'},
