@@ -155,15 +155,15 @@ class RoleManagement(generics.GenericAPIView):
                 return Response({'status': 'fail', 'message': 'Please give correct organization'},
                                 status=status.HTTP_400_BAD_REQUEST)
             if id :
-                # update_role = Role.objects.get(id=id)
-                # update_role.name = name
-                # update_role.description = description
-                # update_role.modified_by = request.user.user_name
-                # update_role.organization = org_data
-                # update_role.save()
+                update_role = Role.objects.get(id=id)
+                update_role.name = name
+                update_role.description = description
+                update_role.modified_by = request.user.user_name
+                update_role.organization = org_data
+                update_role.save()
                 return Response({'status':'sucess','message':"Role updated succesfully"},status=status.HTTP_200_OK)
             else:
-                # Role.objects.create(name=name,description=description,created_by=request.user.user_name,organization=org_data)
+                Role.objects.create(name=name,description=description,created_by=request.user.user_name,organization=org_data)
                 return Response({'status':'sucess','message':"Role created succesfully"},status=status.HTTP_200_OK)
         except Exception as e:
             logger.exception('Exception {}'.format(e.args))
