@@ -5,7 +5,7 @@ from authentication.models import *
 # Register your models here.
 
 class LoginUserGroup(ImportExportModelAdmin):
-    list_display=['id','user_name','password','organization','is_active','is_admin','is_super_admin','is_logged_in']
+    list_display=['id','user_name','password','organization','role','is_active','is_admin','is_super_admin','is_logged_in']
 admin.site.register(LoginUser,LoginUserGroup)
 
 class RoleUserGroup(ImportExportModelAdmin):

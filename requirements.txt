@@ -5,4 +5,5 @@ django
 jwt
 bcrypt
 cryptography
+PyJWT
 django-log-request-id

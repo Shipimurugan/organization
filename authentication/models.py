@@ -13,7 +13,7 @@ class Role(BaseModel):
         db_table = 'role'
 
 class LoginUser(BaseModel):
-    user_name = models.CharField(max_length=50, blank=True, null=True,unique=True)
+    user_name = models.CharField(max_length=50, blank=True, null=True)
     password = models.CharField(max_length=230)
     email_address = models.CharField(max_length=100, blank=True, null=True)
     phone_number = models.CharField(max_length=32, blank=True, null=True)

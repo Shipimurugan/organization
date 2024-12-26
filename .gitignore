@@ -1,0 +1,65 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Django migrations
+**/migrations/
+**/migrations/*.py
+!**/migrations/__init__.py
+
+# Logs
+*.log
+*.out
+*.err
+
+# Database
+*.sqlite3
+
+# Media and Static files
+/media/
+staticfiles/
+
+# Test coverage
+htmlcov/
+.coverage
+.tox/
+.nox/
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*.bak
+*.orig
+*.DS_Store
+
+# Packaging files
+*.egg
+*.egg-info/
+dist/
+build/
+*.wheel
+
+# Node.js modules
+node_modules/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# Git itself
+.git/
+
+# Pytest
+.pytest_cache/

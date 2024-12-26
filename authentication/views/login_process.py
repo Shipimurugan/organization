@@ -25,6 +25,8 @@ class LoginUsersView(generics.GenericAPIView):
     authentication_classes = []
     def post(self, request):
         """
+        
+        URLs -  http://127.0.0.1:8000/auth/add/user/
         Sample Request
         {
             "user_name": "shipi_007",
@@ -32,7 +34,6 @@ class LoginUsersView(generics.GenericAPIView):
             "is_admin": true,
             "is_super_admin":false,
             "organization":"",
-            "role":"",
             "phone_number":987655433,
             "email_address":"shipi@gmail.com"
         }
@@ -51,8 +52,11 @@ class LoginUsersView(generics.GenericAPIView):
             is_admin = data.get('is_admin')
             is_super_admin = data.get('is_super_admin')
             organization = data.get('organization')
-            role = data.get('role')
-            if LoginUser.objects.filter(user_name=user_name).first():
+            if not (user_name and password and email_address and organization):
+                return Response({'status': 'fail', 'message': 'please Enter the required field'}, status=status.HTTP_400_BAD_REQUEST)
+            if not len([i for i in [is_admin,is_super_admin] if i==True]) == 1:
+                return Response({'status': 'fail', 'message': 'please give the role correctely'}, status=status.HTTP_400_BAD_REQUEST)
+            if LoginUser.objects.filter(user_name=user_name,organization=organization).first():
                 return Response({'status': 'fail', 'message': 'User Name Already Exist'}, status=status.HTTP_400_BAD_REQUEST)
             if not re.search(EMAIL_REGEX, email_address):
                 return Response({'status': 'fail', 'message': 'Please enter correct email'},
@@ -66,15 +70,16 @@ class LoginUsersView(generics.GenericAPIView):
                     return Response({'status': 'fail', 'message': 'Organization id not exist'},
                                 status=status.HTTP_400_BAD_REQUEST)
             hashed_passwd = bcrypt.hashpw(bytes(password, 'utf-8'), bcrypt.gensalt(10)).decode('utf8')
+            role = None
             login_details = {
                 'user_name':user_name,
                 'password':hashed_passwd,
                 'email_address':email_address,
-                'is_admin': is_admin,
+                'is_admin': False,
                 'is_super_admin':is_super_admin,
                 'phone_number':phone_number,
                 'organization':org_data,
-                'role':role
+                'role':role 
             }
             LoginUser.objects.create(**login_details)
             return Response({'status':'success','message':'User Created Successfully'},status=status.HTTP_200_OK)
@@ -89,6 +94,7 @@ class LoginAuthenticationView(generics.GenericAPIView):
     authentication_classes = []
     def post(self, request):
         """
+        URLs -  http://127.0.0.1:8000/auth/login/
         Sample Request
         {
             "user_name": "sethu_001",
@@ -141,6 +147,9 @@ class LoginAuthenticationView(generics.GenericAPIView):
                 response_data['is_admin'] = True
             if user.is_super_admin:
                 response_data['is_super_admin'] = True
+            if user.organization:
+                response_data['organization'] = user.organization_id
+            response_data['user_id'] = user.id
             user.is_logged_in = True
             user.save()
             return Response({'status': 'success', 'message': 'Login successful', 'data': response_data})
@@ -158,6 +167,8 @@ class LogoutView(generics.GenericAPIView):
     # permission_classes = (permissions.AllowAny,)
     # authentication_classes = []
     def post(self, request, *args, **kwargs):
+        """
+        """
         data = request.data
         if request.user.is_logged_in == True:
             request.user.is_logged_in = False

@@ -56,6 +56,7 @@ class JWTAuthentication(BaseAuthentication):
             request.organization_id = identifier.get('organization_id')
             request.is_admin = identifier.get('is_admin')
             request.is_super_admin = identifier.get('is_super_admin')
+            request.user_id = identifier.get('user_id')
         else:
             return (None)
 
@@ -79,13 +80,21 @@ class JWTAuthentication(BaseAuthentication):
                 user_id = token_data.get('user_id')
             if token_data.get('organization_id'):
                 organization_id = token_data.get('organization_id')
-            if token_data.get('is_admin'):
-                is_admin = token_data.get('is_admin')
-                return (user, token, {'user_id': user_id, 'is_admin': is_admin})
-            if token_data.get('is_super_admin'):
+            # if token_data.get('is_admin'):
+            #     is_admin = token_data.get('is_admin')
+            #     return (user, token, {'user_id': user_id, 'is_admin': is_admin})
+            # if token_data.get('is_super_admin'):
+            #     is_super_admin = token_data.get('is_super_admin')
+            #     return (user, token, {'user_id': user_id,'is_super_admin':is_super_admin})
+            if token_data.get('organization_id') and token_data.get('is_super_admin'):
+                organization_id = token_data.get('organization_id')
                 is_super_admin = token_data.get('is_super_admin')
-                return (user, token, {'user_id': user_id,'is_super_admin':is_super_admin})
-            if token_data.get('organization_id'):
+                return (user, token, {'user_id': user_id,'organization_id':organization_id,'is_super_admin':is_super_admin})
+            elif token_data.get('organization_id') and token_data.get('is_admin'):
+                is_admin = token_data.get('is_admin')
+                organization_id = token_data.get('organization_id')
+                return (user, token, {'user_id': user_id,'organization_id':organization_id,'is_admin':is_admin})
+            elif token_data.get('organization_id'):
                 organization_id = token_data.get('organization_id')
                 return (user, token, {'user_id': user_id,'organization_id':organization_id})
             else:

@@ -4,10 +4,11 @@ import logging
 from core.models import Organization
 from authentication.models import Role,LoginUser
 from datetime import datetime
+from django.db.models import F
 import re
 import bcrypt
 
-EMAIL_REGEX = '^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$'
+EMAIL_REGEX = '^\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*(\\.\\w{2,3})+$'
 logger = logging.getLogger(__name__)
 
 class OrganizationDetail(generics.GenericAPIView):
@@ -34,7 +35,9 @@ class OrganizationDetail(generics.GenericAPIView):
             is_admin = request.is_admin
             is_super_admin = request.is_super_admin
             organization_id = request.organization_id
-            if Organization.objects.filter(name=name).first():
+            if not name or not description :
+                return Response({'status': 'fail', 'message': 'Invalid name/description'}, status=status.HTTP_400_BAD_REQUEST)
+            if Organization.objects.filter(name=name).first() and not id:
                 return Response({'status': 'fail', 'message': 'Organization Name Already Exist'}, status=status.HTTP_400_BAD_REQUEST)
             if not (is_admin or is_super_admin):
                 return Response({'status': 'fail', 'message': 'You are not allow to create a organization'},
@@ -91,6 +94,8 @@ class OrganizationDetail(generics.GenericAPIView):
             is_admin = request.is_admin
             is_super_admin = request.is_super_admin
             organization_id = request.organization_id
+            if not id:
+                return Response({'status': 'fail', 'message': 'organization ID does not exist'}, status=status.HTTP_400_BAD_REQUEST)
             if not (is_admin or is_super_admin):
                 return Response({'status': 'fail', 'message': 'You are not allow to delete a organization'},
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -119,7 +124,6 @@ class RoleManagement(generics.GenericAPIView):
         }
         sample request for create
         {   
-            "id":1,
             "name":"manager",
             "description":"he will all process in companys",
             "organization":1
@@ -134,13 +138,16 @@ class RoleManagement(generics.GenericAPIView):
             is_super_admin = request.is_super_admin
             organization_id = request.organization_id
             organization = data.get('organization')
-            if Role.objects.filter(name=name,organization=request.user.organization).first():
+            print(is_super_admin,"?????????",is_admin,"organization_id",organization_id)
+            if not name or not description or not organization:
+                return Response({'status': 'fail', 'message': 'Invalid name/description/organization'}, status=status.HTTP_400_BAD_REQUEST)
+            if Role.objects.filter(name=name,organization=organization).first() and not id:
                 return Response({'status': 'fail', 'message': 'Role Already Exist in organization'}, status=status.HTTP_400_BAD_REQUEST)
             if not (is_admin or is_super_admin):
                 return Response({'status': 'fail', 'message': 'You are not allow to create a organization'},
                                 status=status.HTTP_400_BAD_REQUEST)
             if is_admin:
-                if id and id != request.user.organization_id:
+                if id and id != organization_id:
                     return Response({'status': 'fail', 'message': 'Admin can update only their own organization roles.'},
                                     status=status.HTTP_400_BAD_REQUEST)
             org_data = Organization.objects.filter(id=organization).first()
@@ -148,15 +155,15 @@ class RoleManagement(generics.GenericAPIView):
                 return Response({'status': 'fail', 'message': 'Please give correct organization'},
                                 status=status.HTTP_400_BAD_REQUEST)
             if id :
-                update_role = Role.objects.get(id=id)
-                update_role.name = name
-                update_role.description = description
-                update_role.modified_by = request.user.user_name
-                update_role.organization = org_data
-                update_role.save()
+                # update_role = Role.objects.get(id=id)
+                # update_role.name = name
+                # update_role.description = description
+                # update_role.modified_by = request.user.user_name
+                # update_role.organization = org_data
+                # update_role.save()
                 return Response({'status':'sucess','message':"Role updated succesfully"},status=status.HTTP_200_OK)
             else:
-                Role.objects.create(name=name,description=description,created_by=request.user.user_name,organization=org_data)
+                # Role.objects.create(name=name,description=description,created_by=request.user.user_name,organization=org_data)
                 return Response({'status':'sucess','message':"Role created succesfully"},status=status.HTTP_200_OK)
         except Exception as e:
             logger.exception('Exception {}'.format(e.args))
@@ -178,7 +185,7 @@ class RoleManagement(generics.GenericAPIView):
                 search_data['name__startswith'] = name
             if not is_super_admin:
                 search_data['organization'] = request.user.organization
-            role_data = Role.objects.filter(**search_data).values('id','name','description','created_date','modified_date')
+            role_data = Role.objects.filter(is_active=True,**search_data).values('id','name','description','created_date','modified_date',organization_name=F('organization__name'))
             return Response({'status':'success','message':'Role data','data':role_data})
         except Role.DoesNotExist as le:
             logger.exception('Exception {}'.format(le.args))
@@ -199,6 +206,8 @@ class RoleManagement(generics.GenericAPIView):
             is_admin = request.is_admin
             is_super_admin = request.is_super_admin
             organization_id = request.organization_id
+            if not id:
+                return Response({'status': 'fail', 'message': 'role ID does not exist'}, status=status.HTTP_400_BAD_REQUEST)
             if not (is_admin or is_super_admin):
                 return Response({'status': 'fail', 'message': 'You are not allow to delete a role.'},
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -256,13 +265,17 @@ class UserManagement(generics.GenericAPIView):
             is_admin = request.is_admin
             is_super_admin = request.is_super_admin
             organization_id = request.organization_id
-            print(organization_id,">>>>>>>>>>>>>>>",is_super_admin,"is_super_admin",is_admin)
+            if not (user_name and password and email_address and organization) and not id:
+                return Response({'status': 'fail', 'message': 'please Enter the required field'}, status=status.HTTP_400_BAD_REQUEST)
+            if not (user_name and email_address and organization) and id:
+                return Response({'status': 'fail', 'message': 'please Enter the required field'}, status=status.HTTP_400_BAD_REQUEST)
             is_manager = False
             if request.user.role:
                 if request.user.role.name == "manager":
                     is_manager = True
-            if LoginUser.objects.filter(user_name=user_name,organization=request.user.organization).first() and not id:
-                return Response({'status': 'fail', 'message': 'Role Already Exist in organization'}, status=status.HTTP_400_BAD_REQUEST)
+            log_data = LoginUser.objects.filter(user_name=user_name,organization=organization).first()
+            if not id and log_data:
+                    return Response({'status': 'fail', 'message': 'User name Already Exist in organization'}, status=status.HTTP_400_BAD_REQUEST) 
             if not re.search(EMAIL_REGEX, email_address):
                 return Response({'status': 'fail', 'message': 'Please enter correct email'},
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -287,11 +300,15 @@ class UserManagement(generics.GenericAPIView):
                 if id and org_data.id != request.user.organization_id:
                     return Response({'status': 'fail', 'message': 'Admin can update only their own organization roles.'},
                                     status=status.HTTP_400_BAD_REQUEST)
-            if id and password:
-                hashed_passwd = bcrypt.hashpw(bytes(password, 'utf-8'), bcrypt.gensalt(10)).decode('utf8')
+            if role:
+                role_check = Role.objects.filter(id=role,organization=organization).first()
+                if not role_check:
+                    return Response({'status': 'fail', 'message': 'Role not exist in the organization'},
+                                    status=status.HTTP_400_BAD_REQUEST)
             if id :
                 update_login = LoginUser.objects.get(id=id)
                 if password:
+                    hashed_passwd = bcrypt.hashpw(bytes(password, 'utf-8'), bcrypt.gensalt(10)).decode('utf8')
                     update_login.password = hashed_passwd
                 update_login.user_name = user_name
                 update_login.email_address = email_address
@@ -303,7 +320,6 @@ class UserManagement(generics.GenericAPIView):
                 update_login.save()
                 return Response({'status':'success','message':'User updated Successfully'},status=status.HTTP_200_OK)
             else:
-                
                 hashed_passwd = bcrypt.hashpw(bytes(password, 'utf-8'), bcrypt.gensalt(10)).decode('utf8')
                 login_details = {
                 'user_name':user_name,
@@ -321,7 +337,7 @@ class UserManagement(generics.GenericAPIView):
             logger.exception('Exception {}'.format(e.args))
             return Response({'status': 'fail', 'message': 'Something went wrong. Please try again later.'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
     def get(self,request):
         """
         URLs - core/user/
@@ -332,11 +348,16 @@ class UserManagement(generics.GenericAPIView):
             search_data = {}
             is_super_admin = request.is_super_admin
             is_admin = request.is_admin
+            organization_id = request.organization_id
             if name:
                 search_data['user_name__startswith'] = name
+            is_manager = False
+            if request.user.role:
+                if request.user.role.name == "manager":
+                    is_manager = True
             if not is_super_admin:
-                search_data['organization'] = request.user.organization
-            if not (is_admin or is_super_admin or request.user.role.name == "manager"):
+                search_data['organization'] = organization_id
+            if not (is_admin or is_super_admin or is_manager):
                 search_data['id'] = request.user.id
             user_data = LoginUser.objects.filter(is_active=True,**search_data).values('id','user_name','email_address','phone_number','organization__name','role__name','created_date','modified_date')
             return Response({'status':'success','message':'LoginUser data','data':user_data})
@@ -358,15 +379,21 @@ class UserManagement(generics.GenericAPIView):
             id = data.get('id')
             is_admin = request.is_admin
             is_super_admin = request.is_super_admin
+            organization_id = request.organization_id
             manager = False
             if request.user.role:
                 if request.user.role.name == "manager":
                     manager = True
+            if not id:
+                return Response({'status': 'fail', 'message': 'User ID does not exist'}, status=status.HTTP_400_BAD_REQUEST)
             if not (is_admin or is_super_admin or manager):
                 return Response({'status': 'fail', 'message': 'You are not allow to delete a role.'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            del_org = LoginUser.objects.get(id=id)
-            if (is_admin or manager) and del_org.organization_id != request.user.organization_id:
+            del_org = LoginUser.objects.filter(id=id).first()
+            if not del_org:
+                return Response({'status': 'fail', 'message': 'Login user id not exist'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if (is_admin or manager) and del_org.organization_id != organization_id:
                 return Response({'status': 'fail', 'message': 'Admin/manager can delete only their own organization role.'},
                                 status=status.HTTP_400_BAD_REQUEST)
             del_org.is_active = False
@@ -376,40 +403,59 @@ class UserManagement(generics.GenericAPIView):
             logger.exception('Exception {}'.format(e.args))
             return Response({'status': 'fail', 'message': 'Something went wrong. Please try again later'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-# class AssignRole(generics.GenericAPIView):
-#     def post(self,request):
-#         try:
-#             data = request.data
-#             is_admin = request.is_admin
-#             is_super_admin = request.is_super_admin
-#             role_name = data.get('role_name')
-#             user_id = data.get('user_id')
-#             if not (is_admin or is_super_admin or request.user.role.name == "manager"):
-#                 return Response({'status': 'fail', 'message': 'You are not allow to delete a role.'},
-#                                 status=status.HTTP_400_BAD_REQUEST)
-#             if role_name == 'is_super_admin' and request.user.role.name == "manager":
-#                 return Response({'status': 'fail', 'message': 'You are not allow to assign super_admin.'},
-#                                 status=status.HTTP_400_BAD_REQUEST)
-#             search_data = {}
-#             if is_admin:
-#                 search_data['organization'] = request.user.organization
-#             if request.user.role:
-#                 if request.user.role.name == "manager":
-#                     search_data['organization'] = request.user.organization
-#             user_data = LoginUser.objects.filter(id=user_id,**search_data).first()
-#             if not user_data:
-#                 return Response({'status': 'fail', 'message': 'You are not allowed to assign roles outside your organization.'},
-#                                 status=status.HTTP_400_BAD_REQUEST)
-#             role_check = Role.objects.filter(name=role_name,organization=user_data.organization).first()
-#             if not role_check:
-#                 return Response({'status': 'fail', 'message': 'Role not exist in the organization'},
-#                                 status=status.HTTP_400_BAD_REQUEST)
-#             user_update = LoginUser.objects.get(id=user_id)
-#             user_update.role = role_check.id
-#             user_update.save()
-#             return Response({'status':'success','message':'Role assigned successfully'})
-#         except Exception as e:
-#             logger.exception('Exception {}'.format(e.args))
-#             return Response({'status': 'fail', 'message': 'Something went wrong. Please try again later'},
-#                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+class AssignRole(generics.GenericAPIView):
+    def post(self,request):
+        """
+        URLs -  http://127.0.0.1:8000/core/assign/
+        sample request 
+        {
+            "user_id":8,
+            "admin":false,
+            "super_admin":false,
+            "role_name":2
+        }
+        """
+        try:
+            data = request.data
+            is_admin = request.is_admin
+            is_super_admin = request.is_super_admin
+            role_name = data.get('role_name')
+            user_id = data.get('user_id')
+            admin = data.get('admin')
+            super_admin = data.get('super_admin')
+            organization_id = request.organization_id
+            print(">>>>>>>>>>>>>>>>>>>>>>>",organization_id)
+            manager = False
+            if not user_id:
+                return Response({'status': 'fail', 'message': 'please Enter the user_id'}, status=status.HTTP_400_BAD_REQUEST)
+            if request.user.role:
+                if request.user.role.name == "manager":
+                    manager = True
+            if not (is_admin or is_super_admin or manager):
+                return Response({'status': 'fail', 'message': 'You are not allow to delete a role.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if super_admin and manager:
+                return Response({'status': 'fail', 'message': 'You are not allow to assign super_admin.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            search_data = {}
+            if not is_super_admin:
+                search_data['organization'] = organization_id
+            user_data = LoginUser.objects.filter(id=user_id,**search_data).first()
+            if not user_data:
+                return Response({'status': 'fail', 'message': 'user Data not found ,please check assigning out your organization'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if role_name:
+                role_check = Role.objects.filter(id=role_name,organization=user_data.organization).first()
+                if not role_check:
+                    return Response({'status': 'fail', 'message': 'Role not exist in the organization'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            user_data.role = role_check if role_name else None
+            user_data.is_super_admin = super_admin
+            user_data.is_admin = admin
+            user_data.save()
+            return Response({'status':'success','message':'Role assigned successfully'})
+        except Exception as e:
+            logger.exception('Exception {}'.format(e.args))
+            return Response({'status': 'fail', 'message': 'Something went wrong. Please try again later'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
