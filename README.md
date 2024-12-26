@@ -17,3 +17,5 @@ First api  http://127.0.0.1:8000/auth/add/user/ without authentication want to c
 2. http://127.0.0.1:8000/auth/login/ if you log in token will be generated in response put the token in the every next api in header
 
 key = Authorization   value = token "give the token "
+
+create role name = 'manager' in small
