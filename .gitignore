@@ -63,3 +63,10 @@ node_modules/
 
 # Pytest
 .pytest_cache/
+
+# Ignore compiled Python files
+*.pyc
+__pycache__/
+
+# Ignore log files
+*.log
