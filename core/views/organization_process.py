@@ -115,6 +115,7 @@ class RoleManagement(generics.GenericAPIView):
     def post(self,request):
         """
         URLs - core/role/
+        role management
         sample request for edit
         {   
             "id":1,
@@ -138,7 +139,6 @@ class RoleManagement(generics.GenericAPIView):
             is_super_admin = request.is_super_admin
             organization_id = request.organization_id
             organization = data.get('organization')
-            print(is_super_admin,"?????????",is_admin,"organization_id",organization_id)
             if not name or not description or not organization:
                 return Response({'status': 'fail', 'message': 'Invalid name/description/organization'}, status=status.HTTP_400_BAD_REQUEST)
             if Role.objects.filter(name=name,organization=organization).first() and not id:
