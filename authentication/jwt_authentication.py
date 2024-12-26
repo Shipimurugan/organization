@@ -19,7 +19,6 @@ def decrypt_token_data(data):
     return decrypted_data.decode()
 
 class JWTAuthentication(BaseAuthentication):
-    print("jwd auth")
     model = None
     def get_model(self):
         return LoginUser
@@ -80,12 +79,6 @@ class JWTAuthentication(BaseAuthentication):
                 user_id = token_data.get('user_id')
             if token_data.get('organization_id'):
                 organization_id = token_data.get('organization_id')
-            # if token_data.get('is_admin'):
-            #     is_admin = token_data.get('is_admin')
-            #     return (user, token, {'user_id': user_id, 'is_admin': is_admin})
-            # if token_data.get('is_super_admin'):
-            #     is_super_admin = token_data.get('is_super_admin')
-            #     return (user, token, {'user_id': user_id,'is_super_admin':is_super_admin})
             if token_data.get('organization_id') and token_data.get('is_super_admin'):
                 organization_id = token_data.get('organization_id')
                 is_super_admin = token_data.get('is_super_admin')
